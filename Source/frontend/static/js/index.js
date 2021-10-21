@@ -1,4 +1,5 @@
-import Splash from "./views/Splash.js";
+import Splash from "./views/Splash.js"; 
+import Teams from "./views/Teams.js";
 
 const navigateTo = url => { //prevents page refresh every time a link is pressed
     history.pushState(null, null, url);
@@ -7,13 +8,13 @@ const navigateTo = url => { //prevents page refresh every time a link is pressed
 
 const router = async () => { //async funtion to load page views
     const routes = [
-        //{path: "/404", view: () => console.log("Viewing 404") },
+        {path: "/404", view: () => console.log("Viewing 404") },
         {path: "/", view: () => Splash }, // when the route = "/" runs function
-        //{path: "/login", view: () => console.log("Viewing login") },
-        //{path: "/register", view: () => console.log("Viewing register") },
-        //{path: "/teams", view: () => console.log("Viewing teams") },
-        //{path: "/newteam", view: () => console.log("Viewing newteam") },
-        //{path: "/newmatch", view: () => console.log("Viewing newmatch") },
+        {path: "/login", view: () => console.log("Viewing login") },
+        {path: "/register", view: () => console.log("Viewing register") },
+        {path: "/teams", view: () => Teams },
+        {path: "/newteam", view: () => console.log("Viewing newteam") },
+        {path: "/newmatch", view: () => console.log("Viewing newmatch") },
     ];
 
     //test each route for potential match
