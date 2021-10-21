@@ -34,7 +34,7 @@ const router = async () => { //async funtion to load page views
         };
     }
 
-    const view = new match.route.view();
+    const view = new match.route.view;
 
     document.querySelector("#app").innerHTML = await view.getHtml();
 };
