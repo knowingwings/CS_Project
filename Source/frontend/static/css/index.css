@@ -1,13 +1,14 @@
 body {
     --nav-width: 200px;
     font-family: 'Courier New', Courier, monospace;
-    font-size: 12px;
+    font-size: 12pt;
+    color: #FFFF;
     background-color: #394247;
 }
 
 h1 {
     font-family: Arial;
-    font-size: 40px;
+    font-size: 40pt;
     color: #FFFF;
 }
 .nav {
