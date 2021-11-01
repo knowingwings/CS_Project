@@ -13,7 +13,7 @@ export default class extends AbstractView {
             <input type="text" name="" value="" placeholder="Username" id="usernameRegister">
             <input type="password" name="" value="" placeholder="Password" id="passwordRegister">
             <input type="button" name="" value="Register" onclick="register();">
-            <a href="/login" class="nav__link" data-link>Already have an account?</a>
+            <a href="/login" class="nav__link" data-link id="loginReturn">Already have an account?</a>
         </form>
         `;
     }

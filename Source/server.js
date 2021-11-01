@@ -10,3 +10,5 @@ app.get("/*", (req, res) => {
 });
 
 app.listen(process.env.PORT || 2040, () => console.log("Server running...")); //outputs that the server is running in terminal and runs the server through port 2040
+
+app.post('/auth')
