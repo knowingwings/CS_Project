@@ -8,7 +8,7 @@ export default class extends AbstractView {
 
     async getHtml() { // html to be inserted
         return `
-        <form class="box" id="loginForm" style="display:block;" action="auth" method="POST">
+        <form class="box" id="loginForm" style="display:block;" action="loginAttempt" method="POST">
             <h1>Login</h1>
             <input type="text" name="username" value="" placeholder="Username" id="usernameLogin">
             <input type="password" name="password" value="" placeholder="Password" id="passwordLogin">
