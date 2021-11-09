@@ -51,7 +51,7 @@ app.listen(process.env.PORT || 2040, () => console.log("Server running...")); //
 
 async function searchUsername(username){
     try{
-        const q = query(userDb, where("username" == username));
+        const q = query(userDb, where("username", "==", username));
         const querySnapshot = await getDocs(q);
         querySnapshot.forEach((doc) => {
             console.log(doc.id, " => ", doc.data());
@@ -65,7 +65,7 @@ async function searchUsername(username){
 app.post('/loginAttempt', async function(req,response){
     var username = req.body.username;
     var password = req.body.password;
-    console.log("username " + username + "\npassword " + password);
+    console.log("username: " + username + "\npassword: " + password);
 
     if(username && password) {
         if(username.length>20 || password.length>20){
@@ -76,6 +76,7 @@ app.post('/loginAttempt', async function(req,response){
         }
         else{
             await searchUsername(username);
+            response.send()
         }
     }
     else{
