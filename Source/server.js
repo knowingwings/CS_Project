@@ -8,13 +8,14 @@ const path = require("path");
 const { initializeApp } = require("firebase/app");
 const { getFirestore } = require("firebase/firestore");
 const { utimesSync } = require("fs");
-const { collection, query, where, getDocs, doc } = require("firebase/firestore");
+const { collection, query, where, getDocs, doc, setDoc } = require("firebase/firestore");
 //----------------
 const bodyParser = require("body-parser");
+const { urlToHttpOptions } = require("url");
 
 const app = express();
 const saltRounds = 10;
-var queryData;
+var loggedUser; //global var of the user logged in
 
 const firebaseConfig = {
     apiKey: "AIzaSyCjB13kHrESLrKIz2z3VwevLDvlLS4vX_8",
@@ -49,13 +50,43 @@ app.get("/*", (req, res) => {
 
 app.listen(process.env.PORT || 2040, () => console.log("Server running...")); //outputs that the server is running in terminal and runs the server through port 2040
 
+function validatePassword(p) {
+    const errors = [];
+    if (p.length < 8) {
+        errors.push("Your password must be at least 8 characters");
+    }
+    if (p.length > 32) {
+        errors.push("Your password must be at max 32 characters");
+    }
+    if (p.search(/[a-z]/) < 0) {
+        errors.push("Your password must contain at least one lower case letter."); 
+    }
+    if (p.search(/[A-Z]/) < 0) {
+        errors.push("Your password must contain at least one upper case letter."); 
+    }
+
+    if (p.search(/[0-9]/) < 0) {
+        errors.push("Your password must contain at least one digit.");
+    }
+   if (p.search(/[!@#\$%\^&\*_]/) < 0) {
+        errors.push("Your password must contain at least special char from -[ ! @ # $ % ^ & * _ ]"); 
+    }
+    if (errors.length > 0) {
+        return errors.join("\n");
+    }
+    return true;
+};
+
 async function searchUsername(username){
     try{
+        var uData;
         const q = query(userDb, where("username", "==", username));
         const querySnapshot = await getDocs(q);
         querySnapshot.forEach((doc) => {
-            console.log(doc.id, " => ", doc.data());
+           uData = doc.data();
+           loggedUser = doc.id;
         });
+        return uData;
         }
         catch(err){
             console.log(err);
@@ -64,19 +95,55 @@ async function searchUsername(username){
 
 app.post('/loginAttempt', async function(req,response){
     var username = req.body.username;
-    var password = req.body.password;
-    console.log("username: " + username + "\npassword: " + password);
+    var plainPassword = req.body.password;
 
-    if(username && password) {
-        if(username.length>20 || password.length>20){
-            console.log("u or p too long");
-        }
-        else if (username.length<6 || password.length<8){
-            console.log("u or p too short");
+    if(username && plainPassword) {
+        var passVal = validatePassword(plainPassword);
+        if(passVal==true){
+            userData = await searchUsername(username);
+            var storedPassword = userData.password;
+
+            if (storedPassword == plainPassword){
+                return response.redirect("/teams");
+            }
+            else {
+                response.send("Incorrect Password");
+            }
         }
         else{
-            await searchUsername(username);
-            response.send()
+            response.send(passVal);
+        }
+    }
+    else{
+        response.send("Please enter username and Password");
+        response.end();
+    }
+});
+
+
+app.post('/registerAttempt', async function(req,response){
+    var username = req.body.username;
+    var plainPassword = req.body.password;
+    if(username && plainPassword) {
+        var passVal = validatePassword(plainPassword)
+        if(passVal==true){
+            userData = await searchUsername(username);
+            if(userData==undefined){
+                const newUserRef = doc(collection(db, "users"));
+
+                var data = {
+                    username: username,
+                    password: plainPassword
+                }
+                await setDoc(newUserRef, data);
+                return response.redirect("/teams");
+            }
+            else{
+                response.send("User already exists");
+            }
+        }
+        else{
+            response.send(passVal);
         }
     }
     else{
@@ -84,4 +151,3 @@ app.post('/loginAttempt', async function(req,response){
         response.end();
     }
 })
-
