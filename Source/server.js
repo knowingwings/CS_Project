@@ -12,6 +12,7 @@ const { collection, query, where, getDocs, doc, setDoc } = require("firebase/fir
 //----------------
 const bodyParser = require("body-parser");
 const { urlToHttpOptions } = require("url");
+const { async } = require("@firebase/util");
 
 const app = express();
 const saltRounds = 10;
@@ -39,6 +40,7 @@ const db = getFirestore();
 
 //collections
 const userDb = collection(db, "users");
+const teamDb = collection(db, "teams");
 
 
 app.use("/static", express.static(path.resolve(__dirname,"frontend", "static")));
@@ -93,6 +95,21 @@ async function searchUsername(username){
         }
 };
 
+async function searchTeamName(teamName){
+    try{
+        var tData;
+        const q = query(teamDb, where("name", "==", teamName) && where("owner", "==", loggedUser));
+        const querySnapshot = await getDocs(q);
+        querySnapshot.forEach((doc) => {
+           tData = doc.data();
+        });
+        return tData;
+        }
+        catch(err){
+            console.log(err);
+        }
+}
+
 app.post('/loginAttempt', async function(req,response){
     var username = req.body.username;
     var plainPassword = req.body.password;
@@ -101,13 +118,19 @@ app.post('/loginAttempt', async function(req,response){
         var passVal = validatePassword(plainPassword);
         if(passVal==true){
             userData = await searchUsername(username);
-            var storedPassword = userData.password;
-
-            if (storedPassword == plainPassword){
-                return response.redirect("/teams");
+            if(userData==undefined){
+                response.send("User not  found");
             }
-            else {
-                response.send("Incorrect Password");
+            else{
+                var storedPassword = userData.password;
+
+                if (storedPassword == plainPassword){
+                    console.log(loggedUser);
+                    return response.redirect("/teams");
+                }
+                else {
+                    response.send("Incorrect Password");
+                }
             }
         }
         else{
@@ -150,4 +173,60 @@ app.post('/registerAttempt', async function(req,response){
         response.send("Please enter username and Password");
         response.end();
     }
+});
+
+function validateBuzzword(b){
+    const errors = [];
+    if (b.length < 6) {
+        errors.push("Your buzzword must be at least 6 characters");
+    }
+    if (b.length > 32) {
+        errors.push("Your buzzword must be at max 32 characters");
+    }
+    if (b.search(/[a-z]/) < 0) {
+        errors.push("Your buzzword must contain at least one lower case letter."); 
+    }
+    if (b.search(/[A-Z]/) < 0) {
+        errors.push("Your buzzword must contain at least one upper case letter."); 
+    }
+
+    if (b.search(/[0-9]/) < 0) {
+        errors.push("Your buzzword must contain at least one digit.");
+    }
+   if (b.search(/\W/) > 0) {
+        errors.push("Your buzzword cannot contain any special characters"); 
+    }
+    if (errors.length > 0) {
+        return errors.join("\n");
+    }
+    return true;
+}
+
+app.post('/addingTeam', async function(req,res){
+    var teamName = req.body.teamName;
+    var buzzword = req.body.teamBuzzword;
+    if (teamName && buzzword) {
+        var buzzVal = validateBuzzword(buzzword);
+        if(buzzVal==true){
+            var teamExists = await searchTeamName(teamName);
+            if(teamExists==undefined){
+                const newTeamRef = doc(collection(db, "teams"));
+
+                var data = {
+                    buzzword: buzzword,
+                    owner: loggedUser,
+                    name: teamName,
+                    rifles: [],
+                    members: []
+                }
+
+                await setDoc(newTeamRef, data);
+                teamDat = searchTeamName(teamName);
+                return res.redirect("/editteam/"+ teamDat.id);
+
+            }
+        }
+
+    }
+    
 })

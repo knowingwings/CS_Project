@@ -3,6 +3,7 @@ import Teams from "./views/Teams.js";
 import Error404 from "./views/Error404.js";
 import Login from "./views/Login.js";
 import Register from "./views/Register.js";
+import newTeam from "./views/NewTeam.js";
 
 const navigateTo = url => { //prevents page refresh every time a link is pressed
     history.pushState(null, null, url);
@@ -16,7 +17,7 @@ const router = async () => { //async funtion to load page views
         {path: "/login", view: Login },
         {path: "/register", view: Register },
         {path: "/teams", view: Teams },
-        {path: "/newteam", view: () => console.log("Viewing newteam") },
+        {path: "/newteam", view: newTeam },
         {path: "/newmatch", view: () => console.log("Viewing newmatch") },
     ];
 
