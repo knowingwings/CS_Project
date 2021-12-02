@@ -18,7 +18,7 @@ const app = express();
 const saltRounds = 10;
 var loggedUser; //global var of the user logged in
 
-const firebaseConfig = {
+const firebaseConfig = { //firebase config
     apiKey: "AIzaSyCjB13kHrESLrKIz2z3VwevLDvlLS4vX_8",
 
     authDomain: "eq-manager-cs-proj.firebaseapp.com",
@@ -216,14 +216,15 @@ app.post('/addingTeam', async function(req,res){
                     buzzword: buzzword,
                     owner: loggedUser,
                     name: teamName,
-                    rifles: [],
-                    members: []
+                    members: [] //formated as "{name}.{riflenumber}"
                 }
 
                 await setDoc(newTeamRef, data);
                 teamDat = searchTeamName(teamName);
                 return res.redirect("/editteam/"+ teamDat.id);
-
+            }
+            else {
+                res.send(buzzVal);              
             }
         }
 
