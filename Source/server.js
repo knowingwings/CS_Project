@@ -52,6 +52,20 @@ app.get("/*", (req, res) => {
 
 app.listen(process.env.PORT || 2040, () => console.log("Server running...")); //outputs that the server is running in terminal and runs the server through port 2040
 
+async function hashPhrase(plaintext) {
+  try {
+    const hash = await bcrypt.hash(plaintext, saltRounds);
+    return hash;
+  } catch (err) {
+    console.error('There was an error ', err);
+  }
+}
+
+async function compareHash(plaintext, dbText) {
+    const match = await bcrypt.compare(plaintext, dbText);
+    return match;
+}
+
 function validatePassword(p) {
     const errors = [];
     if (p.length < 8) {
@@ -123,8 +137,8 @@ app.post('/loginAttempt', async function(req,response){
             }
             else{
                 var storedPassword = userData.password;
-
-                if (storedPassword == plainPassword){
+                var comparePasswords = await compareHash(plainPassword, storedPassword);
+                if (comparePasswords == true){
                     console.log(loggedUser);
                     return response.redirect("/teams");
                 }
@@ -152,11 +166,12 @@ app.post('/registerAttempt', async function(req,response){
         if(passVal==true){
             userData = await searchUsername(username);
             if(userData==undefined){
+                var hashedPass = await hashPhrase(plainPassword);
                 const newUserRef = doc(collection(db, "users"));
 
                 var data = {
                     username: username,
-                    password: plainPassword
+                    password: hashedPass
                 }
                 await setDoc(newUserRef, data);
                 return response.redirect("/teams");
