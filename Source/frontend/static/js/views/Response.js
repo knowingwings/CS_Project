@@ -8,10 +8,13 @@ export default class extends AbstractView {
 
     async getHtml() { // html to be inserted
         const func = this.params.func;
-        const ID = this.params.func;
+        const ID = this.params.id;
 
         if (func=="createMatch"){
             console.log("Viewing ")
+        }
+        else if(func=="share"){
+            console.log('localhost:2040/response/reply/'+ ID)
         }
         else if(func=="reply"){
             console.log("Viewing reply")

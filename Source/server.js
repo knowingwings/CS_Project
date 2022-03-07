@@ -8,12 +8,15 @@ const path = require("path");
 const { initializeApp } = require("firebase/app");
 const { getFirestore } = require("firebase/firestore");
 const { utimesSync } = require("fs");
-const { collection, query, where, getDocs, doc, setDoc, documentId} = require("firebase/firestore");
+const { collection, query, where, getDocs, doc, setDoc, documentId, updateDoc} = require("firebase/firestore");
 //----------------
 const bodyParser = require("body-parser");
 const { urlToHttpOptions } = require("url");
 const { async } = require("@firebase/util");
 const { type } = require("os");
+const { get } = require("http");
+const { json } = require("body-parser");
+const { start } = require("repl");
 
 const app = express();
 const saltRounds = 10;
@@ -21,11 +24,19 @@ var loggedUser; //global var of the user logged in
 var currentTeam; //global var of the current team
 
 class team { // JSON object class
-    constructor(name, buzzword, owner, teamMembers)  {
+    constructor(name, buzzword, owner, teamMembers, teamMatches)  {
         this.name= name,
         this.buzzword= buzzword,
         this.owner= owner,
-        this.teamMembers= teamMembers
+        this.teamMembers= teamMembers,
+        this.teamMatches = teamMatches
+    }
+}
+
+class reqTeamNumObj{
+    constructor(number, teamIDS){
+        this.number = number,
+        this.ids = teamIDS
     }
 }
 
@@ -53,6 +64,7 @@ const db = getFirestore();
 const userDb = collection(db, "users");
 const teamDb = collection(db, "teams");
 const tmembersDb = collection(db, "teamMembers");
+const matchDb = collection(db, "matches");
 
 app.use("/static", express.static(path.resolve(__dirname,"frontend", "static")));
 var urlencodedParser =  bodyParser.urlencoded({extended: true});
@@ -198,6 +210,70 @@ async function fetchTeamMembers(teamID) {
     }
 }
 
+async function getTeamNum(ownerID) {
+    try{
+        var numOfTeams;
+        var k = 0;
+        const q = query(teamDb, where("owner", "==", ownerID));
+        const querySnapshot = await getDocs(q);
+        querySnapshot.forEach(()=> {
+            k++;
+            numOfTeams=k;
+        });
+        return numOfTeams;
+    }
+    catch(err){
+        console.log(err);
+    }
+    
+}
+
+async function getTeamIDs(ownerID) {
+    try{
+        var j = 0;
+        var fetchedData = [];
+        const q = query(teamDb, where("owner", "==", ownerID));
+        const querySnapshot = await getDocs(q);
+        querySnapshot.forEach((doc)=> {
+            fetchedData[j] = doc.id;
+            j++;
+        });
+        return fetchedData;
+    }
+    catch(err){
+        console.log(err);
+    }
+}
+
+async function fetchMatches(teamID){
+    try{
+        var tMData;
+        const q = query(matchDb, where("teamID", "==", teamID) && where("owner", "==", loggedUser));
+        const querySnapshot = await getDocs(q);
+        querySnapshot.forEach((doc) => {
+           tMData = doc.data();
+        });
+        return tMData;
+        }
+    catch(err){
+            console.log(err);
+        }
+}
+async function fetchMatchID(teamID){
+    try{
+        var idData;
+        const q = query(matchDb, where("teamID", "==", teamID) && where("owner", "==", loggedUser));
+        const querySnapshot = await getDocs(q);
+        querySnapshot.forEach((doc) => {
+           idData = doc.id;
+        });
+        return idData;
+        }
+    catch(err){
+            console.log(err);
+        }
+}
+
 // -----------------------------------------------    REQUEST AND RESPONSE MANAGEMENT   ---------------------------------------
 
 app.post('/loginAttempt',urlencodedParser, async function(req,response){
@@ -266,7 +342,7 @@ app.post('/registerAttempt',urlencodedParser, async function(req,response){
     }
 });
 
-app.post('/addingTeam', async function(req,res){
+app.post('/teams/new/addingTeam', urlencodedParser, async function(req,res){
     var teamName = req.body.teamName;
     var buzzword = req.body.teamBuzzword;
     if (teamName && buzzword) {
@@ -274,16 +350,17 @@ app.post('/addingTeam', async function(req,res){
         if(buzzVal==true){
             var teamExists = await searchTeamName(teamName);
             if(teamExists.name!=teamName){
+                var hashedBuzz = await hashPhrase(buzzword);
                 const newTeamRef = doc(collection(db, "teams"));
                 var data = {
-                    buzzword: buzzword,
+                    buzzword: hashedBuzz,
                     owner: loggedUser,
                     name: teamName
                 }
 
                 await setDoc(newTeamRef, data);
                 teamDat = await searchTeamName(teamName);
-                return res.redirect("/teams/edit/"+ currentTeam);
+                return res.redirect("/teams");
             }
             else {
                 res.send("Team Already exists");              
@@ -297,10 +374,51 @@ app.post('/addingTeam', async function(req,res){
     
 })
 
-app.post('/requestTeamDat',jsonParser, async function(req,response){
-    var teamID = req.body.ID;
-    var teamData = await getTeamDat(teamID);
-    var teamMembers = await fetchTeamMembers(teamID);
-    var teamDatObj = new team(teamData.name, teamData.buzzword, teamData.owner, teamMembers);
-    response.send(JSON.stringify(teamDatObj));
+app.post('/request',jsonParser, async function(req,response){
+    const typeOfReq = req.body.type;
+    if(typeOfReq == "TeamDat"){
+        var teamID = req.body.teamid;
+        var teamData = await getTeamDat(teamID);
+        var teamMembers = await fetchTeamMembers(teamID);
+        var teamMatches = await fetchMatches(teamID);
+        var teamDatObj = new team(teamData.name, teamData.buzzword, teamData.owner, teamMembers, teamMatches);
+        response.send(JSON.stringify(teamDatObj));
+    }
+    else if(typeOfReq == "TeamNum"){
+        var numOfTeams = await getTeamNum(loggedUser);
+        var teamIDS = await getTeamIDs(loggedUser);
+        var datObj = new reqTeamNumObj(numOfTeams,teamIDS);
+        response.send(JSON.stringify(datObj));
+    }
+})
+
+app.post('/teams/organise/createMatch', urlencodedParser, async function(req, res){
+    const date = req.body.date;
+    const startTime = req.body.startTime;
+    const endTime = req.body.endTime;
+    const teamID = req.body.teamID;
+    console.log(date);
+    
+    const newmatch = doc(collection(db, "matches"));
+                var data = {
+                    date: date,
+                    startTime: startTime,
+                    endTime: endTime,
+                    owner: loggedUser,
+                    teamID: teamID
+                }
+
+    const currMatch = await fetchMatches(teamID);
+    if (currMatch == undefined){
+        console.log("Creating new Match Doc");
+        newmatch = await fetchMatchID(teamID);
+        await setDoc(newmatch, data);
+        res.redirect('/response/share/'+newmatch);
+        }
+    else{
+        console.log("Using Existing Match Doc");
+        const currMatchID = await fetchMatchID(teamID);
+        await updateDoc(currMatchID, data);
+        res.redirect('/response/share/'+currMatch);
+    }
 })
