@@ -17,6 +17,7 @@ const { type } = require("os");
 const { get } = require("http");
 const { json } = require("body-parser");
 const { start } = require("repl");
+const { match } = require("assert");
 
 const app = express();
 const saltRounds = 10;
@@ -412,13 +413,15 @@ app.post('/teams/organise/createMatch', urlencodedParser, async function(req, re
     if (currMatch == undefined){
         console.log("Creating new Match Doc");
         newmatch = await fetchMatchID(teamID);
-        await setDoc(newmatch, data);
+        const newMatchRef = doc(matchDb, currMatchID);
+        await setDoc(newMatchRef, data);
         res.redirect('/response/share/'+newmatch);
         }
     else{
         console.log("Using Existing Match Doc");
         const currMatchID = await fetchMatchID(teamID);
-        await updateDoc(currMatchID, data);
-        res.redirect('/response/share/'+currMatch);
+        const currMatchRef = doc(matchDb, currMatchID);
+        await updateDoc(currMatchRef, data);
+        res.redirect('/response/share/'+currMatchID);
     }
 })
