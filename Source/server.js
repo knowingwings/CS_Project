@@ -22,7 +22,7 @@ const { match } = require("assert");
 const app = express();
 const saltRounds = 10;
 var loggedUser; //global var of the user logged in
-var currentTeam; //global var of the current team
+var openMatch; //global var of openteam
 
 class team { // JSON object class
     constructor(name, buzzword, owner, teamMembers, teamMatches)  {
@@ -415,13 +415,20 @@ app.post('/teams/organise/createMatch', urlencodedParser, async function(req, re
         newmatch = await fetchMatchID(teamID);
         const newMatchRef = doc(matchDb, currMatchID);
         await setDoc(newMatchRef, data);
-        res.redirect('/response/share/'+newmatch);
+        openMatch = '/response/reply/'+newMatchID
+        res.redirect('/response/share/'+newMatchID);
         }
     else{
         console.log("Using Existing Match Doc");
         const currMatchID = await fetchMatchID(teamID);
         const currMatchRef = doc(matchDb, currMatchID);
         await updateDoc(currMatchRef, data);
+        openMatch = '/response/reply/'+currMatchID;
         res.redirect('/response/share/'+currMatchID);
     }
+})
+
+app.post('/shareComplete', async function(req, res){
+    console.log(openMatch);
+    res.redirect(openMatch);
 })

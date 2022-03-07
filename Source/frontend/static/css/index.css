@@ -48,7 +48,7 @@ h1 {
     font-family: 'Courier New', Courier, monospace;
 }
 
-.box input[type= "button"],.box input[type= "submit"]{
+.box input[type= "button"],.box input[type= "submit"], .box button{
     background-color: #2d3c42;
     border:0;
     border:2px solid #d1940f;

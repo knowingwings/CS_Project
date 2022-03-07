@@ -14,7 +14,12 @@ export default class extends AbstractView {
             console.log("Viewing ")
         }
         else if(func=="share"){
-            console.log('localhost:2040/response/reply/'+ ID)
+            return `<form class="box" id="share" action="/shareComplete" method="POST">
+                    <h1> Share </h1>
+                    <label for="myInput">Share Link:</label>
+                    <button onclick="prompt('Press Ctrl + C, then Enter to copy to clipboard','localhost:2040/response/reply/`+ ID +`')">Copy Link</button>
+                    </form>
+            `;
         }
         else if(func=="reply"){
             console.log("Viewing reply")
