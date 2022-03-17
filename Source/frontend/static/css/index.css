@@ -34,7 +34,7 @@ h1 {
     background:#5c5c5c;
     text-align: center;
 }
-.box input[type = "text"], .box input[type="password"], .box input[type="number"], .box input[type="date"], .box input[type="time"] {
+.box input[type = "text"], .box input[type="password"], .box input[type="number"], .box input[type="date"], .box input[type="time"], .box select {
     border:0;
     background: none;
     display: block;

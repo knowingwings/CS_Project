@@ -73,20 +73,37 @@ export default class extends AbstractView {
             </form>`];
 
             class teamForm {
-                constructor(name, buzzword, id, matches){
+                constructor(name, buzzword, id, match, matchID){
                     this.name = name;
                     this.buzzword = buzzword;
                     this.id = id;
-                    this.matches = matches;
+                    this.matches = match;
+                    this.matchId = matchID;
                 }
 
                 template(){
-                    if(this.matches==undefined){
-                        return '<form class="teamContainer" id="'+ this.id + '"> <h1>' + this.name + `</h1> <input type="button" value="EDIT" onclick="location.href='teams/edit/`+ this.id + `'"> <input type="button" value="ORGANISE MATCH" onclick="location.href='teams/organise/`+ this.id + `'"> </form>`
+                    if(this.matches == undefined){
+                        return '<form class="teamContainer" id="'+ this.id + `">
+                        <h1>` + this.name + `</h1>
+                            <input type="button" value="EDIT" onclick="location.href='teams/edit/`+ this.id + `'">
+                            <input type="button" value="ORGANISE MATCH" onclick="location.href='teams/organise/`+ this.id + `'">
+                            <p>No Active Match</p>
+                            <p id="buzzword" name="buzzword"> Buzzword: `+ this.buzzword +`</p>
+                        </form>`
                     }
                     else{
-                        return '<form class="teamContainer" id="'+ this.id + '"> <h1>' + this.name + `</h1> <input type="button" value="EDIT" onclick="location.href='teams/edit/`+ this.id + `'"> <input type="button" value="VIEW MATCH" onclick="location.href='response/viewResponses/`+ this.matches.id + `'"> </form>`;
+                        return `<form class="teamContainer" id="`+ this.id + `"> 
+                            <h1>` + this.name + `</h1> <input type="button" value="EDIT" onclick="location.href='teams/edit/`+ this.id + `'">
+                            <input type="button" value="ORGANISE MATCH" onclick="location.href='teams/organise/`+ this.id + `'"> 
+                            <input type="button" value="VIEW MATCH" onclick="location.href='response/viewResponses/`+ this.matchId + `'"> 
+                            <p id="buzzword"> Buzzword: `+ this.buzzword +`</p>
+                            <h2>Current Match Information:</h2>
+                            <p id="matchDate"> ` + this.matches.date +`</p> 
+                            <p id="matchStart"> Start Time: ` + this.matches.startTime +`</p>
+                            <p id="matchEnd"> End Time: `+ this.matches.endTime +`</p>
+                        </form>`;
                     }
+                    
                 }
             }
             const fetchNum = this.postData(reqURL, dataToSend)
@@ -107,44 +124,46 @@ export default class extends AbstractView {
                     var dat = await teamDatFetch;
                     var tempName = dat.name;
                     var tempBuzzword = dat.buzzword;
-                    var temp = new teamForm(tempName, tempBuzzword, teamid);
+                    var tempMatch = dat.match;
+                    var matchID = dat.matchId;
+                    var temp = new teamForm(tempName, tempBuzzword, teamid, tempMatch, matchID);
                     htmlForms[i] = temp.template();
-                    }
-                    teamsPos=1
-                    var templateDat = `
-                    <h1>Teams</h1>
-                    <script>
-                    var htmlForms = [` + htmlForms +`];
-                    var teamsPos = 0;
-                    function cycle(dir){
-                        if(dir=="left")
-                            if(teamsPos>1){
-                                teamsPos--;
-                                document.getElementById("slot1").innerHTML(htmlForms[teamsPos-1]);
-                                document.getElementById("slot2").innerHTML(htmlForms[teamsPos]);
-                                document.getElementById("slot3").innerHTML(htmlForms[teamsPos+1]);
-                            }
-                            else{}
-                        else if (dir=="right")
-                            if(teamsPos+1<numOfTeams){
-                                teamsPos++;
-                                document.getElementById("slot1").innerHTML(htmlForms[teamsPos-1]);
-                                document.getElementById("slot2").innerHTML(htmlForms[teamsPos]);
-                                document.getElementById("slot3").innerHTML(htmlForms[teamsPos+1]);   
-                            }
-                            else{}
-                        else{
-                            console.log("Invalid Param")
+                }
+                teamsPos=1
+                var templateDat = `
+                <h1>Teams</h1>
+                <script>
+                var htmlForms = [` + htmlForms +`];
+                var teamsPos = 0;
+                function cycle(dir){
+                    if(dir=="left")
+                        if(teamsPos>1){
+                            teamsPos--;
+                            document.getElementById("slot1").innerHTML(htmlForms[teamsPos-1]);
+                            document.getElementById("slot2").innerHTML(htmlForms[teamsPos]);
+                            document.getElementById("slot3").innerHTML(htmlForms[teamsPos+1]);
                         }
+                        else{}
+                    else if (dir=="right")
+                        if(teamsPos+1<numOfTeams){
+                            teamsPos++;
+                            document.getElementById("slot1").innerHTML(htmlForms[teamsPos-1]);
+                            document.getElementById("slot2").innerHTML(htmlForms[teamsPos]);
+                            document.getElementById("slot3").innerHTML(htmlForms[teamsPos+1]);   
+                        }
+                        else{}
+                    else{
+                        console.log("Invalid Param")
                     }
-                    </script>
-                    <img id="leftArrow" src="https://img.icons8.com/ios-filled/100/ffffff/chevron-left.png"/ onclick="cycle('left')">
-                    <div id="slot1">`+ htmlForms[teamsPos-1] + `</div>
-                    <div id="slot2">`+ htmlForms[teamsPos] + `</div>
-                    <div id="slot3">`+ htmlForms[teamsPos+1] + `</div>
-                    <img id="rightArrow" src="https://img.icons8.com/ios-filled/100/ffffff/chevron-right.png"/ onclick="cycle('right')">
-                    `;
-                    return templateDat;
+                }
+                </script>
+                <img id="leftArrow" src="https://img.icons8.com/ios-filled/100/ffffff/chevron-left.png"/ onclick="cycle('left')">
+                <div id="slot1">`+ htmlForms[teamsPos-1] + `</div>
+                <div id="slot2">`+ htmlForms[teamsPos] + `</div>
+                <div id="slot3">`+ htmlForms[teamsPos+1] + `</div>
+                <img id="rightArrow" src="https://img.icons8.com/ios-filled/100/ffffff/chevron-right.png"/ onclick="cycle('right')">
+                `;
+                return templateDat;
                 }
                 else {
                     console.log("No teams found")

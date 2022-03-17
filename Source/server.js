@@ -8,7 +8,7 @@ const path = require("path");
 const { initializeApp } = require("firebase/app");
 const { getFirestore } = require("firebase/firestore");
 const { utimesSync } = require("fs");
-const { collection, query, where, getDocs, doc, setDoc, documentId, updateDoc} = require("firebase/firestore");
+const { collection, query, where, getDocs, doc, setDoc, documentId, updateDoc, getDoc} = require("firebase/firestore");
 //----------------
 const bodyParser = require("body-parser");
 const { urlToHttpOptions } = require("url");
@@ -23,14 +23,16 @@ const app = express();
 const saltRounds = 10;
 var loggedUser; //global var of the user logged in
 var openMatch; //global var of openteam
+var detail;
 
 class team { // JSON object class
-    constructor(name, buzzword, owner, teamMembers, teamMatches)  {
+    constructor(name, buzzword, owner, teamMembers, match, matchId)  {
         this.name= name,
         this.buzzword= buzzword,
         this.owner= owner,
         this.teamMembers= teamMembers,
-        this.teamMatches = teamMatches
+        this.match = match,
+        this.matchId = matchId
     }
 }
 
@@ -146,6 +148,7 @@ function validateBuzzword(b){
     }
     return true;
 }
+
 // ----------------------------------   FIRESTORE FUNCTIONS    -------------------------------------
 
 async function searchUsername(username){
@@ -249,7 +252,7 @@ async function getTeamIDs(ownerID) {
 async function fetchMatches(teamID){
     try{
         var tMData;
-        const q = query(matchDb, where("teamID", "==", teamID) && where("owner", "==", loggedUser));
+        const q = query(matchDb, where("teamID", "==", teamID), where("owner", "==", loggedUser));
         const querySnapshot = await getDocs(q);
         querySnapshot.forEach((doc) => {
            tMData = doc.data();
@@ -264,6 +267,34 @@ async function fetchMatchID(teamID){
     try{
         var idData;
         const q = query(matchDb, where("teamID", "==", teamID) && where("owner", "==", loggedUser));
+        const querySnapshot = await getDocs(q);
+        querySnapshot.forEach((doc) => {
+           idData = doc.id;
+        });
+        return idData;
+        }
+    catch(err){
+            console.log(err);
+        }
+}
+
+async function fetchMatchByID(matchID){
+    try{
+        var data;
+        const d = doc(matchDb, matchID);
+        const docSnap = await getDoc(d);
+        data = docSnap.data()
+        return data;
+        }
+    catch(err){
+            console.log(err);
+        }
+}
+
+async function fetchMemberID(teamID, name){
+    try{
+        var idData;
+        const q = query(tmembersDb, where("teamID", "==", teamID) && where("name", "==", name));
         const querySnapshot = await getDocs(q);
         querySnapshot.forEach((doc) => {
            idData = doc.id;
@@ -351,10 +382,10 @@ app.post('/teams/new/addingTeam', urlencodedParser, async function(req,res){
         if(buzzVal==true){
             var teamExists = await searchTeamName(teamName);
             if(teamExists.name!=teamName){
-                var hashedBuzz = await hashPhrase(buzzword);
+                //var hashedBuzz = await hashPhrase(buzzword);
                 const newTeamRef = doc(collection(db, "teams"));
                 var data = {
-                    buzzword: hashedBuzz,
+                    buzzword: buzzword,//hashedBuzz,
                     owner: loggedUser,
                     name: teamName
                 }
@@ -382,7 +413,8 @@ app.post('/request',jsonParser, async function(req,response){
         var teamData = await getTeamDat(teamID);
         var teamMembers = await fetchTeamMembers(teamID);
         var teamMatches = await fetchMatches(teamID);
-        var teamDatObj = new team(teamData.name, teamData.buzzword, teamData.owner, teamMembers, teamMatches);
+        var matchID = await fetchMatchID(teamID);
+        var teamDatObj = new team(teamData.name, teamData.buzzword, teamData.owner, teamMembers, teamMatches, matchID);
         response.send(JSON.stringify(teamDatObj));
     }
     else if(typeOfReq == "TeamNum"){
@@ -390,6 +422,17 @@ app.post('/request',jsonParser, async function(req,response){
         var teamIDS = await getTeamIDs(loggedUser);
         var datObj = new reqTeamNumObj(numOfTeams,teamIDS);
         response.send(JSON.stringify(datObj));
+    }
+    else if(typeOfReq == "matchTeamID"){
+        var matchID = req.body.id;
+        var matches = await fetchMatchByID(matchID);
+        var datOBj = {"startTime": matches.startTime, "date": matches.date, "owner": matches.owner, "endTime": matches.endTime, "teamID": matches.teamID};
+        response.send(JSON.stringify(datOBj));
+    }
+    else if(typeOfReq == "fetchMatchID"){
+        var teamID = req.body.id;
+        var matchId = await fetchMatchID(teamID);
+        response.send(JSON.stringify(matchId));
     }
 })
 
@@ -429,6 +472,116 @@ app.post('/teams/organise/createMatch', urlencodedParser, async function(req, re
 })
 
 app.post('/shareComplete', async function(req, res){
-    console.log(openMatch);
     res.redirect(openMatch);
+})
+
+app.post('/response/reply/send', urlencodedParser, async function(req, res){
+    const leaveTime = req.body.leaveTime;
+    const endTime = req.body.endTime;
+    const name = req.body.members;
+    const teamId = req.body.teamID;
+    const dateFromPage = req.body.date;
+    const buzzword = req.body.buzzword;
+    const buzzCheckWord = await getTeamDat(teamId);
+
+
+    if(buzzword==buzzCheckWord.buzzword){
+        if(leaveTime>endTime){
+            res.send("Invalid leave time")
+        }
+        else{
+            var data = {
+                endTime: leaveTime,
+                date: dateFromPage
+            }
+            const memberId = await fetchMemberID(teamId, name);
+            const memberRef = doc(tmembersDb, memberId);
+            await updateDoc(memberRef, data);
+            res.send("Thank You for replying")
+        }
+    }
+    else {
+        res.send("Incorrect Buzzword")
+    }
+    
+})
+
+app.post('/response/viewResponses/createDetail', urlencodedParser, async function(req,res){
+    const numOfDetails = req.body.detailNum;
+    const numOfTargets = req.body.targetNum;
+    const sharedTargetBool = req.body.targSharing; //Only gets passed if checked
+    const teamId = req.body.teamID;
+
+    var numOfLanes = 0;
+
+    var teamMems = await fetchTeamMembers(teamId);
+    const numOfPeople = teamMems.length;
+    if(sharedTargetBool==true){
+        numOfLanes = numOfTargets*2;
+    }
+    else{
+        numOfLanes = numOfTargets;
+    }
+
+    for(let i=0; i<numOfPeople-1; i++){ //sort by earliest leave time bubble sort
+        swapped=false;
+        for(let j=0; j<numOfPeople-1; j++){
+            if(teamMems[j].endTime>teamMems[j+1].endTime){
+                var b = teamMems[j+1]; //swap elements pos
+                teamMems[j+1] = teamMems[j];
+                teamMems[j]=b; 
+                swapped=true;
+            }
+        }
+        if(swapped==false){
+            break
+        }
+    }
+    var match = [];
+    var firing = [];
+    var prep = [];
+    var butts = [];
+    var count = [];
+    for(let k=0; k<numOfLanes-1; k++){
+        if(teamMems[k]==undefined){
+            break
+        }
+        else{
+            for(let l=0; l<k; l++) {
+                checkMatch=false;
+                if(l==0){
+                    checkMatch=false
+                }
+                else{
+                    if(teamMems[k].rifle == firing[l].rifle){
+                        checkMatch=true;
+                        teamMems.push(teamMems.splice(k, 1)[0]); //move to back
+                    }
+                }
+            }
+            firing[k] = teamMems[k];
+        }
+    }
+    console.log(firing)
+
+    for(let w=0; w<numOfLanes-1; w++){
+        z= w+numOfLanes;
+        if(count[z]<1){
+            count[z]=0;
+        }
+
+        prep[w]=teamMems[z];
+    }
+
+    for(let h=0; h<numOfLanes-1; h++){
+        b=h+numOfLanes*2
+        if(count[b]<1){
+            count[b]=0;
+        }
+
+        butts[h]=teamMems[b];
+    }
+
+    detail = {"firing": firing, "prep": prep, "butts": butts, "numOfDetail":numOfDetails, "numOfLanes":numOfLanes}
+    res.redirect("/response/viewDetail/0");
 })
