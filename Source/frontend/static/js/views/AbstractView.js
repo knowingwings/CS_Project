@@ -24,7 +24,13 @@ export default class {
           body: data, // body data type must match "Content-Type" header
         });
         return response.json(); // parses JSON response into native JavaScript objects
-      }
+    }
 
-
+    isEven(n) {
+        return n % 2 == 0; //checks if the number is even
+     }
+     
+    isOdd(n) {
+        return Math.abs(n % 2) == 1; //check if the number is odd
+     }
 }

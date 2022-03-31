@@ -17,10 +17,143 @@ export default class extends AbstractView {
             const fetchData = this.postData(reqURL, dataToSend)
                 .then(data => {
                     var dat = data;
-                    var template = '<h1> Edit </h1> <form class="teamContainer" id="editMainMenu"> <h1>Team: ' + dat.name + '</h1> </form>';
-                    return template;
+                    
+                    return dat;
                 })
-            return await fetchData;
+            const data = await fetchData;
+            var template = `<h1> Edit </h1>
+            <form class="box" id="editMainMenu">
+            <h1>Edit: ` + data.name + `</h1>
+            <input type="button" value="ADD MEMBER" onclick="location.href='../addMember/`+ id +`'">
+            <p></p>
+            <input type="button" value="ADD RIFLE" onclick="location.href='../addRifle/`+ id +`'">
+            <p></p>
+            <input type="button" value="EDIT MEMBER" onclick="location.href='../editMember/`+ id +`'">
+            <p></p>
+            <input type="button" value="REMOVE RIFLE" onclick="location.href='../removeRifle/`+ id +`'">
+            </form>`;
+            return template;
+        }
+        else if(func == 'addMember'){
+            const fetchTeamData = this.postData(reqURL, JSON.stringify({type: "TeamDat","teamid": id}))
+                    .then(data=> {
+                        return data;
+                    })
+            var teamDat = await fetchTeamData;
+
+            // Name drop down
+            var rDropdownElements = [];
+            for(let i=0;i<teamDat.rifles.length;i++){
+                rDropdownElements[i] = `<option style="bg-color:gray;" value="`+ teamDat.rifles[i] +`">`+ teamDat.rifles[i] +`</option>`
+            };
+
+            var rDropdown = `<select name="rifle" id="rifle">`;
+            for(let j=0;j<teamDat.rifles.length;j++){
+                
+                if(j==teamDat.rifles.length){
+                    rDropdown = rDropdown.concat(rDropdownElements[j]);
+                }
+                else{
+                    rDropdown = rDropdown.concat(rDropdownElements[j]);
+                };
+            }
+            
+            return `<form class="box" id="addMember" action="../addMember" method="POST">
+            <h1>Add Member</h1>
+            <input type="text" name="teamID" value="`+ id +`" style="display:none;">
+            <input type="text" name="date" value="0000-00-00" style="display:none;">
+            <input type="text" name="endTime" value="00:00" style="display:none;">
+            <label for="memName">Name:</label>
+            <input type="text" name="memName">
+            <label for="rifle">Rifle Number</label>
+            `+ rDropdown +`
+            </select>
+            <label for="coached"> Coached? </label>
+            <input type="checkbox" id="coached" name="coach">
+            <p></p>
+            
+            <input type="submit" value="Add Member">
+            </form>`
+        }
+
+        else if(func == 'addRifle'){
+            return `<form class="box" id="addRifle" action="../addRifleFunc" method="POST">
+            <h1>Add Rifle</h1>
+            <input type="text" name="teamID" value="`+ id +`" style="display:none;">
+            <label for="rifleNum"> Rifle Number: </label>
+            <input type="text" name="rifleNum"> 
+            <input type="submit" value="Add Rifle">
+            </form>`
+        }
+
+        else if(func == 'editMember'){
+            const fetchTeamData = this.postData(reqURL, JSON.stringify({type: "TeamDat","teamid": id}))
+            .then(data=> {
+                return data;
+            })
+            var teamDat = await fetchTeamData;
+            
+            // Name drop down
+            console.log(teamDat.teamMembers);
+            var tMDropdownElements = [];
+            for(let i=0;i<teamDat.teamMembers.length;i++){
+                tMDropdownElements[i] = `<option value="`+ teamDat.teamMembers[i].name +`">`+ teamDat.teamMembers[i].name +`</option>`
+            };
+
+            var tMDropdown = `<select name="members" id="members_id" required>`;
+            for(let j=0;j<teamDat.teamMembers.length;j++){
+                
+                if(j==teamDat.teamMembers.length){
+                    tMDropdown = tMDropdown.concat(tMDropdownElements[j]);
+                    tMDropdown = tMDropdown.concat("</select>")
+                }
+                else{
+                    tMDropdown = tMDropdown.concat(tMDropdownElements[j]);
+                };
+            }
+
+            // Name drop down
+            var rDropdownElements = [];
+            for(let i=0;i<teamDat.rifles.length;i++){
+                rDropdownElements[i] = `<option style="bg-color:gray;" value="`+ teamDat.rifles[i] +`">`+ teamDat.rifles[i] +`</option>`
+            };
+
+            var rDropdown = `<select name="rifle" id="rifle">`;
+            for(let j=0;j<teamDat.rifles.length;j++){
+                
+                if(j==teamDat.rifles.length){
+                    rDropdown = rDropdown.concat(rDropdownElements[j]);
+                }
+                else{
+                    rDropdown = rDropdown.concat(rDropdownElements[j]);
+                };
+            }
+
+            return `<form class="box" id="editMember" action="../editMemberFunc/" method="POST">
+            <h1>Edit Member</h1>
+            <p> Input current data as well as new data </p>
+            <input type="text" name="teamID" value="`+ id +`" style="display:none;">
+            `+ tMDropdown +`</select>
+            <label for="memName">Name:</label>
+            <input type="text" name="memName">
+            <label for="rifle">Rifle Number</label>
+            `+ rDropdown +`
+            </select>
+            <label for="coachedBool"> Coached? </label>
+            <input type="checkbox" id="coachedBool" name="coachedBool">
+            <p></p>
+            <input type="submit" value="Apply Changes">
+            </form>`
+        }
+
+        else if(func == 'removeRifle'){
+            return `<form class="box" id="removeRifle" action="../removeRifleFunc" method="POST">
+            <h1>Remove Rifle</h1>
+            <input type="text" name="teamID" value="`+ id +`" style="display:none;">
+            <label for="rifleNum"> Rifle Number: </label>
+            <input type="text" name="rifleNum"> 
+            <input type="submit" value="Remove Rifle">
+            </form>`
         }
         else if(func == 'new'){
             return `
@@ -85,7 +218,7 @@ export default class extends AbstractView {
                     if(this.matches == undefined){
                         return '<form class="teamContainer" id="'+ this.id + `">
                         <h1>` + this.name + `</h1>
-                            <input type="button" value="EDIT" onclick="location.href='teams/edit/`+ this.id + `'">
+                            <input type="button" value="EDIT" onclick="location.href='./edit/`+ this.id + `'">
                             <input type="button" value="ORGANISE MATCH" onclick="location.href='teams/organise/`+ this.id + `'">
                             <p>No Active Match</p>
                             <p id="buzzword" name="buzzword"> Buzzword: `+ this.buzzword +`</p>

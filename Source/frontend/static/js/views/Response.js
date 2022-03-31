@@ -35,6 +35,7 @@ export default class extends AbstractView {
             var teamDat = await fetchTeamData;
             
             // Name drop down
+            console.log(teamDat.teamMembers);
             var tMDropdownElements = [];
             for(let i=0;i<teamDat.teamMembers.length;i++){
                 tMDropdownElements[i] = `<option value="`+ teamDat.teamMembers[i].name +`">`+ teamDat.teamMembers[i].name +`</option>`
@@ -101,8 +102,154 @@ export default class extends AbstractView {
              </form>`
         }
         else if(func=="viewDetail"){
-            return `
-            <h1>Viewing detail</h1>`
+            const fetchDetail = this.postData(reqURL, JSON.stringify({type: "getDetail"}))
+            .then(data => {
+                return data;
+            })
+            const detailDat = await fetchDetail;
+            var firing = detailDat.firing;
+            var prep = detailDat.prep;
+            var butts = detailDat.butts;
+            var numOfDetail = detailDat.detail;
+            var numOfTargets = detailDat.numOfTargets;
+            var numOfLanes = detailDat.numOfLanes;
+            var firingRow = [];
+            var prepRow = [];
+            var buttsRow = [];
+            var tableTemplate = `
+            <table style="border: 1px solid white;">
+                <thead style="border: 1px solid white;">
+                    <tr style="border: 1px solid white; background:black;">
+                        <th colspan="6" style="text-align: center">Name</th>
+                        <th colspan="6" style="text-align: center">Rifle</th>
+                        <th colspan="6" style="text-align: center">Target</th>
+                        <th colspan="6" style="text-align: center">1st detail Info</th>
+                        <th colspan="6" style="text-align: center">Coach</th>
+                        <th colspan="6" style="text-align: center">Order of Duties</th>
+                    </tr>
+                </thead>
+                <tbody style="border: 1px solid white;">`
+            for(let i=0; i<firing.length; i++){
+                var name = firing[i].name;
+                var rifle = firing[i].rifle;
+                if(numOfLanes==numOfTargets){
+                    var targetNum = i+1;
+                    firingRow[i] = `
+                    <tr style="border: 1px solid white; background:green;">
+                        <td colspan="6" style="text-align: center">    `+ name +`    </td>
+                        <td colspan="6" style="text-align: center">`+ rifle +`</td>
+                        <td colspan="6" style="text-align: center">`+ targetNum +`</td>
+                        <td colspan="6" style="text-align: center"> Firing </td>
+                        <td colspan="6" style="text-align: center">  </td>
+                        <td colspan="6" style="text-align: center"> Firing, Butts, Prep </td>
+                    </tr>`
+                }
+                else{
+                    if(this.isEven(i)){
+                        var targetNum = i+1;
+                    }
+                    else{
+                        var targetNum = i;
+                    }
+                    firingRow[i] = `
+                    <tr style="border: 1px solid white; background:green;">
+                        <td colspan="6" style="text-align: center">    `+ name +`    </td>
+                        <td colspan="6" style="text-align: center">`+ rifle +`</td>
+                        <td colspan="6" style="text-align: center">`+ targetNum +`</td>
+                        <td colspan="6" style="text-align: center"> Firing </td>
+                        <td colspan="6" style="text-align: center">  </td>
+                        <td colspan="6" style="text-align: center"> Firing, Butts, Prep </td>
+                    </tr>`
+                }
+            }
+
+            for(let j=0; j<prep.length; j++){
+                var name = prep[j].name;
+                var rifle = prep[j].rifle;
+                if(numOfLanes==numOfTargets){
+                    var targetNum = j+1;
+                    prepRow[j] = `
+                    <tr style="border: 1px solid white; background:gray;">
+                        <td colspan="6" style="text-align: center">`+ name +`</td>
+                        <td colspan="6" style="text-align: center">`+ rifle +`</td>
+                        <td colspan="6" style="text-align: center">`+ targetNum +`</td>
+                        <td colspan="6" style="text-align: center"> Prep </td>
+                        <td colspan="6" style="text-align: center">  </td>
+                        <td colspan="6" style="text-align: center"> Prep, Firing, Butts </td>
+                    </tr>`
+                }
+                else{
+                    if(this.isEven(j)){
+                        var targetNum = j+1;
+                    }
+                    else{
+                        var targetNum = j;
+                    }
+                    
+                    prepRow[j] = `
+                    <tr style="border: 1px solid white; background:gray;">
+                        <td colspan="6" style="text-align: center">`+ name +`</td>
+                        <td colspan="6" style="text-align: center">`+ rifle +`</td>
+                        <td colspan="6" style="text-align: center">`+ targetNum +`</td>
+                        <td colspan="6" style="text-align: center"> Prep </td>
+                        <td colspan="6" style="text-align: center">  </td>
+                        <td colspan="6" style="text-align: center"> Prep, Firing, Butts </td>
+                    </tr>`
+                }
+            }
+
+            for(let k=0; k<butts.length; k++){
+                var name = butts[k].name;
+                var rifle = butts[k].rifle;
+                if(numOfLanes==numOfTargets){
+                    var targetNum = k+1;
+                    buttsRow[k] = `
+                    <tr style="border: 1px solid white; background:blue;">
+                        <td colspan="6" style="text-align: center">`+ name +`</td>
+                        <td colspan="6" style="text-align: center">`+ rifle +`</td>
+                        <td colspan="6" style="text-align: center">`+ targetNum +`</td>
+                        <td colspan="6" style="text-align: center"> Butts </td>
+                        <td colspan="6" style="text-align: center">  </td>
+                        <td colspan="6" style="text-align: center"> Butts, Prep, Firing </td>
+                    </tr>`
+                }
+                else{
+                    if(this.isEven(k)){
+                        var targetNum = k+1;
+                    }
+                    else{
+                        var targetNum = k;
+                    }
+                    buttsRow[k] = `
+                    <tr style="border: 1px solid white; background:blue;">
+                        <td colspan="6" style="text-align: center">`+ name +`</td>
+                        <td colspan="6" style="text-align: center">`+ rifle +`</td>
+                        <td colspan="6" style="text-align: center">`+ targetNum +`</td>
+                        <td colspan="6" style="text-align: center"> Butts </td>
+                        <td colspan="6" style="text-align: center">  </td>
+                        <td colspan="6" style="text-align: center"> Butts, Prep, Firing </td>
+                    </tr>`
+                }
+            }
+
+            for(let m = 0; m<firingRow.length; m++){
+                tableTemplate=tableTemplate+(firingRow[m])
+            }
+
+            for(let n = 0; n<prepRow.length; n++){
+                tableTemplate=tableTemplate+(prepRow[n])
+            }
+
+            for(let b = 0; b<buttsRow.length; b++){
+                tableTemplate= tableTemplate+(buttsRow[b])
+            }
+
+            tableTemplate= tableTemplate+"\n        </tbody>";
+            return `<h1>Viewing detail</h1>
+            <div class="box" style="width:500px;">
+            `+ tableTemplate + `</table>
+            </div>
+            `;
         }
     }
 }
