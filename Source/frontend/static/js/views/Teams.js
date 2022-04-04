@@ -248,8 +248,8 @@ export default class extends AbstractView {
             numOfTeams = data.number;
 
             if(await numOfTeams>0){
-                for (let i=1; i< numOfTeams; i++) {
-                    var teamid = data.ids[i-1];
+                for (let i=0; i< numOfTeams; i++) {
+                    var teamid = data.ids[i];
                     const teamDatFetch = this.postData(reqURL, JSON.stringify({type:"TeamDat", teamid}))
                     .then(data => {
                         return data;
@@ -260,8 +260,9 @@ export default class extends AbstractView {
                     var tempMatch = dat.match;
                     var matchID = dat.matchId;
                     var temp = new teamForm(tempName, tempBuzzword, teamid, tempMatch, matchID);
-                    htmlForms[i] = temp.template();
+                    htmlForms[i+1] = temp.template();
                 }
+                console.log(htmlForms);
                 teamsPos=1
                 var templateDat = `
                 <h1>Teams</h1>
@@ -291,9 +292,9 @@ export default class extends AbstractView {
                 }
                 </script>
                 <img id="leftArrow" src="https://img.icons8.com/ios-filled/100/ffffff/chevron-left.png"/ onclick="cycle('left')">
-                <div id="slot1">`+ htmlForms[teamsPos-1] + `</div>
-                <div id="slot2">`+ htmlForms[teamsPos] + `</div>
-                <div id="slot3">`+ htmlForms[teamsPos+1] + `</div>
+                <div id="slot1">`+ htmlForms[0] + `</div>
+                <div id="slot2">`+ htmlForms[1] + `</div>
+                <div id="slot3">`+ htmlForms[2] + `</div>
                 <img id="rightArrow" src="https://img.icons8.com/ios-filled/100/ffffff/chevron-right.png"/ onclick="cycle('right')">
                 `;
                 return templateDat;

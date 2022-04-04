@@ -83,7 +83,7 @@ app.listen(process.env.PORT || 2040, () => console.log("Server running...")); //
 
 // ----------------------------    MISC FUNCTIONS   -----------------------------------------------
 
-async function hashPhrase(plaintext) {
+async function hashPhrase(plaintext) { // hashes the phrase passed into it
   try {
     const hash = await bcrypt.hash(plaintext, saltRounds);
     return hash;
@@ -92,7 +92,7 @@ async function hashPhrase(plaintext) {
   }
 }
 
-async function compareHash(plaintext, dbText) {
+async function compareHash(plaintext, dbText) { //compares a plaintext phrase to a hashed phrase.
     const match = await bcrypt.compare(plaintext, dbText);
     return match;
 }
@@ -151,8 +151,7 @@ function validateBuzzword(b){
     return true;
 }
 
-function arrayRemove(arr, value) { 
-    
+function arrayRemove(arr, value) {  //removes an element from the array
     return arr.filter(function(ele){ 
         return ele != value; 
     });
@@ -160,7 +159,7 @@ function arrayRemove(arr, value) {
 
 // ----------------------------------   FIRESTORE FUNCTIONS    -------------------------------------
 
-async function searchUsername(username){
+async function searchUsername(username){ //searches firestore user collection for the username
     try{
         var uData;
         const q = query(userDb, where("username", "==", username));
@@ -176,7 +175,7 @@ async function searchUsername(username){
         }
 };
 
-async function searchTeamName(teamName){
+async function searchTeamName(teamName){ //searches firestore team collection for the team name
     try{
         var tData;
         const q = query(teamDb, where("name", "==", teamName) && where("owner", "==", loggedUser));
@@ -192,7 +191,7 @@ async function searchTeamName(teamName){
         }
 }
 
-async function getTeamDat(teamID){
+async function getTeamDat(teamID){  //searches firestore team collection for the team returning the document data
     try{
         var tData;
         const q = query(teamDb,where(documentId(), "==", teamID));
@@ -206,7 +205,7 @@ async function getTeamDat(teamID){
 }
 
 
-async function fetchTeamMembers(teamID) {
+async function fetchTeamMembers(teamID) { //fetches team members on the team document id
     try{
         var fetchedData = [];
         var i = 0;
@@ -223,7 +222,7 @@ async function fetchTeamMembers(teamID) {
     }
 }
 
-async function getTeamNum(ownerID) {
+async function getTeamNum(ownerID) { // searches for teams owned by the logged in user and returns the number of them
     try{
         var numOfTeams;
         var k = 0;
@@ -241,7 +240,7 @@ async function getTeamNum(ownerID) {
     
 }
 
-async function getTeamIDs(ownerID) {
+async function getTeamIDs(ownerID) { //gets team id
     try{
         var j = 0;
         var fetchedData = [];
@@ -258,7 +257,7 @@ async function getTeamIDs(ownerID) {
     }
 }
 
-async function fetchMatches(teamID){
+async function fetchMatches(teamID){ //gets match data from team id
     try{
         var tMData;
         const q = query(matchDb, where("teamID", "==", teamID), where("owner", "==", loggedUser));
@@ -272,7 +271,7 @@ async function fetchMatches(teamID){
             console.log(err);
         }
 }
-async function fetchMatchID(teamID){
+async function fetchMatchID(teamID){ //gets match id from team id
     try{
         var idData;
         const q = query(matchDb, where("teamID", "==", teamID) && where("owner", "==", loggedUser));
@@ -287,7 +286,7 @@ async function fetchMatchID(teamID){
         }
 }
 
-async function fetchMatchByID(matchID){
+async function fetchMatchByID(matchID){ //gets match by id
     try{
         var data;
         const d = doc(matchDb, matchID);
@@ -300,7 +299,7 @@ async function fetchMatchByID(matchID){
         }
 }
 
-async function fetchMemberID(teamID, name){
+async function fetchMemberID(teamID, name){ //gets team member by id
     try{
         var idData;
         const q = query(tmembersDb, where("teamID", "==", teamID) && where("name", "==", name));
@@ -315,7 +314,7 @@ async function fetchMemberID(teamID, name){
         }
 }
 
-async function fetchTeamRifles(teamID){
+async function fetchTeamRifles(teamID){ // gets rifles from team id
     try{
         var dataRet;
         const q = doc(teamDb, teamID);
@@ -330,7 +329,7 @@ async function fetchTeamRifles(teamID){
 
 // -----------------------------------------------    REQUEST AND RESPONSE MANAGEMENT   ---------------------------------------
 
-app.post('/loginAttempt',urlencodedParser, async function(req,response){
+app.post('/loginAttempt',urlencodedParser, async function(req,response){ //login function
     var username = req.body.username;
     var plainPassword = req.body.password;
 
@@ -364,7 +363,7 @@ app.post('/loginAttempt',urlencodedParser, async function(req,response){
 });
 
 
-app.post('/registerAttempt',urlencodedParser, async function(req,response){
+app.post('/registerAttempt',urlencodedParser, async function(req,response){ //register function
     var username = req.body.username;
     var plainPassword = req.body.password;
     if(username && plainPassword) {
@@ -396,14 +395,14 @@ app.post('/registerAttempt',urlencodedParser, async function(req,response){
     }
 });
 
-app.post('/teams/new/addingTeam', urlencodedParser, async function(req,res){
+app.post('/teams/new/addingTeam', urlencodedParser, async function(req,res){ //add team function
     var teamName = req.body.teamName;
     var buzzword = req.body.teamBuzzword;
     if (teamName && buzzword) {
         var buzzVal = validateBuzzword(buzzword);
         if(buzzVal==true){
             var teamExists = await searchTeamName(teamName);
-            if(teamExists.name!=teamName){
+            if( teamExists == undefined || teamExists.name!=teamName){
                 //var hashedBuzz = await hashPhrase(buzzword);
                 const newTeamRef = doc(collection(db, "teams"));
                 var data = {
@@ -428,9 +427,9 @@ app.post('/teams/new/addingTeam', urlencodedParser, async function(req,res){
     
 })
 
-app.post('/request',jsonParser, async function(req,response){
+app.post('/request',jsonParser, async function(req,response){ //request function
     const typeOfReq = req.body.type;
-    if(typeOfReq == "TeamDat"){
+    if(typeOfReq == "TeamDat"){ //request for team data from webpage
         //fetch data from page
         var teamID = req.body.teamid;
         //fetch data from firestore
@@ -442,14 +441,14 @@ app.post('/request',jsonParser, async function(req,response){
         var teamDatObj = new team(teamData.name, teamData.buzzword, teamData.owner,teamData.rifles, teamMembers, teamMatches, matchID); //create object
         response.send(JSON.stringify(teamDatObj)); //send data back to client
     }
-    else if(typeOfReq == "TeamNum"){
+    else if(typeOfReq == "TeamNum"){ //request for team number from webpage
         //fetch data from firestore
         var numOfTeams = await getTeamNum(loggedUser);
         var teamIDS = await getTeamIDs(loggedUser);
         var datObj = new reqTeamNumObj(numOfTeams,teamIDS);
         response.send(JSON.stringify(datObj));
     }
-    else if(typeOfReq == "matchTeamID"){
+    else if(typeOfReq == "matchTeamID"){ //request for match by match id from webpage
         //fetch data from page
         var matchID = req.body.id;
         //fetch data from firestore
@@ -457,14 +456,14 @@ app.post('/request',jsonParser, async function(req,response){
         var datOBj = {"startTime": matches.startTime, "date": matches.date, "owner": matches.owner, "endTime": matches.endTime, "teamID": matches.teamID}; // create object
         response.send(JSON.stringify(datOBj)); //send data back to client
     }
-    else if(typeOfReq == "fetchMatchID"){
+    else if(typeOfReq == "fetchMatchID"){ //retrieves the match id for the webpage
         //fetch data from page
         var teamID = req.body.id;
 
         var matchId = await fetchMatchID(teamID);
         response.send(JSON.stringify(matchId));
     }
-    else if(typeOfReq == "getDetail"){
+    else if(typeOfReq == "getDetail"){ //sends the detail object to the webpage
         response.send(JSON.stringify(detail)); //send data back to client
     }
     else{ //no match return error
@@ -472,7 +471,7 @@ app.post('/request',jsonParser, async function(req,response){
     }
 })
 
-app.post('/teams/organise/createMatch', urlencodedParser, async function(req, res){
+app.post('/teams/organise/createMatch', urlencodedParser, async function(req, res){ //creates a match
     //fetch data from page
     const date = req.body.date;
     const startTime = req.body.startTime;
@@ -490,11 +489,10 @@ app.post('/teams/organise/createMatch', urlencodedParser, async function(req, re
     const currMatch = await fetchMatches(teamID);
     if (currMatch == undefined){
         console.log("Creating new Match Doc");
-        newMatchID = await fetchMatchID(teamID); //
         const newmatch = doc(collection(db, "matches")); //creates a new reference in the matches collection
-        const newMatchRef = doc(matchDb, currMatchID);
         await setDoc(newMatchRef, data);
-        openMatch = '/response/reply/'+newMatchID
+        newMatchID = await fetchMatchID(teamID); //
+        openMatch = '/response/reply/'+newMatchID;
         res.redirect('/response/share/'+newMatchID);
         }
     else{
@@ -507,11 +505,11 @@ app.post('/teams/organise/createMatch', urlencodedParser, async function(req, re
     }
 })
 
-app.post('/shareComplete', async function(req, res){
+app.post('/shareComplete', async function(req, res){//redirects to mathc
     res.redirect(openMatch);
 })
 
-app.post('/response/reply/send', urlencodedParser, async function(req, res){
+app.post('/response/reply/send', urlencodedParser, async function(req, res){ //send response to data base and update team member
     const leaveTime = req.body.leaveTime;
     const endTime = req.body.endTime;
     const name = req.body.members;
@@ -542,7 +540,7 @@ app.post('/response/reply/send', urlencodedParser, async function(req, res){
     
 })
 
-app.post('/response/viewResponses/createDetail', urlencodedParser, async function(req,res){
+app.post('/response/viewResponses/createDetail', urlencodedParser, async function(req,res){ //create detail
     const numOfDetails = req.body.detailNum;
     const numOfTargets = req.body.targetNum;
     var sharedTargetBool ; //Only gets passed if checked
@@ -655,13 +653,18 @@ app.post(`/teams/addMember`, urlencodedParser, async function(req, res){ // addi
     res.redirect('/teams/edit/'+ teamId);
 })
 
-app.post('/teams/addRifleFunc', urlencodedParser, async function(req,res){
+app.post('/teams/addRifleFunc', urlencodedParser, async function(req,res){ //add rifle to team
     const teamID = req.body.teamID;
     const rifleNumber = req.body.rifleNum;
 
-    const teamRifles = await fetchTeamRifles(teamID);
+    var teamRifles = await fetchTeamRifles(teamID);
     console.log(teamRifles)
-    teamRifles.push(rifleNumber);
+    if(teamRifles==undefined){
+        teamRifles= [rifleNumber];
+    }
+    else{
+        teamRifles.push(rifleNumber);
+    }
 
     const teamRef = doc(teamDb, teamID);
     const data = {
@@ -671,7 +674,7 @@ app.post('/teams/addRifleFunc', urlencodedParser, async function(req,res){
     res.redirect('/teams/edit/'+teamID);
 })
 
-app.post(`/teams/removeRifleFunc`, urlencodedParser, async function(req,res){
+app.post(`/teams/removeRifleFunc`, urlencodedParser, async function(req,res){ // remove a rifle from the team
     const teamID = req.body.teamID;
     const rifleNumber = req.body.rifleNum;
 
@@ -686,7 +689,7 @@ app.post(`/teams/removeRifleFunc`, urlencodedParser, async function(req,res){
     res.redirect('/teams/edit/'+teamID);
 })
 
-app.post(`/teams/editMemberFunc`, urlencodedParser, async function(req, res){
+app.post(`/teams/editMemberFunc`, urlencodedParser, async function(req, res){ // edit a team member
     const teamID = req.body.teamID;
     const memberToChange = req.body.members;
     const newName = req.body.memName;
